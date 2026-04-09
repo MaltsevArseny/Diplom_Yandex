@@ -21,3 +21,6 @@ target/
 *.iml
 *.ipr
 .vscode/
+ewm-main-service-postman.json
+ewm-stat-service-postman.json
+infa/
