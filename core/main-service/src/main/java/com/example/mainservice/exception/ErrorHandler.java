@@ -5,11 +5,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.LocalDateTime;
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class ErrorHandler {
@@ -57,6 +59,31 @@ public class ErrorHandler {
         return ApiError.builder()
             .status("BAD_REQUEST")
             .reason("Incorrectly made request.")
+            .message(ex.getMessage())
+            .timestamp(LocalDateTime.now())
+            .build();
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiError handleValidation(MethodArgumentNotValidException ex) {
+        String message = ex.getBindingResult().getFieldErrors().stream()
+            .map(e -> e.getField() + ": " + e.getDefaultMessage())
+            .collect(Collectors.joining(", "));
+        return ApiError.builder()
+            .status("BAD_REQUEST")
+            .reason("Incorrectly made request.")
+            .message(message)
+            .timestamp(LocalDateTime.now())
+            .build();
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ApiError handleGeneral(Exception ex) {
+        return ApiError.builder()
+            .status("INTERNAL_SERVER_ERROR")
+            .reason("An unexpected error occurred.")
             .message(ex.getMessage())
             .timestamp(LocalDateTime.now())
             .build();

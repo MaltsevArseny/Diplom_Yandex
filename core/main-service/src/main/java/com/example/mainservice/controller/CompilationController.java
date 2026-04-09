@@ -4,6 +4,7 @@ import com.example.mainservice.dto.CompilationDto;
 import com.example.mainservice.dto.NewCompilationDto;
 import com.example.mainservice.dto.UpdateCompilationRequest;
 import com.example.mainservice.service.CompilationService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -26,7 +27,7 @@ public class CompilationController {
 
     @PostMapping("/admin/compilations")
     @ResponseStatus(HttpStatus.CREATED)
-    public CompilationDto create(@RequestBody NewCompilationDto dto) {
+    public CompilationDto create(@Valid @RequestBody NewCompilationDto dto) {
         return compilationService.create(dto);
     }
 

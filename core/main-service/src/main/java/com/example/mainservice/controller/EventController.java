@@ -9,6 +9,7 @@ import com.example.mainservice.dto.ParticipationRequestDto;
 import com.example.mainservice.dto.UpdateEventRequest;
 import com.example.mainservice.service.EventService;
 import com.example.mainservice.service.RequestService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -62,7 +63,7 @@ public class EventController {
 
     @PostMapping("/users/{userId}/events")
     @ResponseStatus(HttpStatus.CREATED)
-    public EventFullDto create(@PathVariable Long userId, @RequestBody NewEventDto dto) {
+    public EventFullDto create(@PathVariable Long userId, @Valid @RequestBody NewEventDto dto) {
         return eventService.create(userId, dto);
     }
 

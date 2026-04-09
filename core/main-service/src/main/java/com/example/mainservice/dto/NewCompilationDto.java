@@ -1,5 +1,7 @@
 package com.example.mainservice.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,5 +19,7 @@ public class NewCompilationDto {
 
     private Boolean pinned;
 
+    @NotBlank(message = "Title cannot be blank")
+    @Size(min = 1, max = 50)
     private String title;
 }

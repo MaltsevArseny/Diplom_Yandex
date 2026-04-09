@@ -59,12 +59,14 @@ public class EventService {
         Integer size
     ) {
         List<EventState> stateList = null;
-        if (states != null) {
+        if (states != null && !states.isEmpty()) {
             stateList = states.stream().map(EventState::valueOf).collect(Collectors.toList());
         }
+        List<Long> userList = (users != null && !users.isEmpty()) ? users : null;
+        List<Long> catList = (categories != null && !categories.isEmpty()) ? categories : null;
         LocalDateTime start = rangeStart != null ? LocalDateTime.parse(rangeStart, FORMATTER) : null;
         LocalDateTime end = rangeEnd != null ? LocalDateTime.parse(rangeEnd, FORMATTER) : null;
-        return eventRepository.findAllByAdmin(users, stateList, categories, start, end,
+        return eventRepository.findAllByAdmin(userList, stateList, catList, start, end,
             PageRequest.of(from / size, size)).stream()
             .map(this::toFullDto)
             .collect(Collectors.toList());
@@ -78,7 +80,8 @@ public class EventService {
         if (dto.getStateAction() != null) {
             if ("PUBLISH_EVENT".equals(dto.getStateAction())) {
                 if (event.getState() != EventState.PENDING) {
-                    throw new ConflictException("Cannot publish the event because it's not in the right state");
+                    throw new ConflictException("Cannot publish the event because it's not in the right state: "
+                        + event.getState());
                 }
                 event.setState(EventState.PUBLISHED);
                 event.setPublishedOn(LocalDateTime.now());
@@ -172,10 +175,11 @@ public class EventService {
         if (start != null && end != null && start.isAfter(end)) {
             throw new BadRequestException("rangeStart must be before rangeEnd");
         }
+        List<Long> catList = (categories != null && !categories.isEmpty()) ? categories : null;
         Sort pageSort = "VIEWS".equals(sort)
             ? Sort.by(Sort.Direction.DESC, "views")
             : Sort.by(Sort.Direction.ASC, "eventDate");
-        return eventRepository.findAllPublic(text, categories, paid, start, end,
+        return eventRepository.findAllPublic(text, catList, paid, start, end,
             onlyAvailable != null ? onlyAvailable : false,
             PageRequest.of(from / size, size, pageSort))
             .stream().map(this::toShortDto).collect(Collectors.toList());
