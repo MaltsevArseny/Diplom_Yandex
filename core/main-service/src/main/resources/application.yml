@@ -1,21 +1,9 @@
 spring:
   application:
     name: main-service
-  config:
-    import: optional:configserver:http://localhost:8888
 
 server:
   port: 0
-
-spring.datasource:
-  driver-class-name: org.postgresql.Driver
-
-spring.jpa:
-  hibernate:
-    ddl-auto: create-drop
-  properties:
-    hibernate:
-      dialect: org.hibernate.dialect.PostgreSQLDialect
 
 eureka:
   client:
@@ -23,3 +11,9 @@ eureka:
       defaultZone: http://localhost:8761/eureka/
   instance:
     prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
