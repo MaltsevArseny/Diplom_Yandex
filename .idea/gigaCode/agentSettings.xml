@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="GigaCodeAgentSettings">
+    <option name="autoApproveEdits" value="true" />
+    <option name="autoApprovedCommands">
+      <list>
+        <Execute>
+          <option name="pattern" value="Get-ChildItem -Path D:/Projects/Diplom_Yandex -Recurse -Filter pom.xml | ForEach-Object { $_.FullName }" />
+        </Execute>
+        <Execute>
+          <option name="pattern" value="Get-ChildItem -Path D:/Projects/Diplom_Yandex -Recurse -Include *.java | ForEach-Object { $_.FullName }" />
+        </Execute>
+        <Execute>
+          <option name="pattern" value="Get-ChildItem -Path D:/Projects/Diplom_Yandex -Recurse -Directory | Where-Object { $_.Name -eq 'src' } | ForEach-Object { $_.FullName }" />
+        </Execute>
+        <Execute>
+          <option name="pattern" value="Get-ChildItem -Path D:/Projects/Diplom_Yandex -Recurse -Filter *.iml | ForEach-Object { $_.FullName }" />
+        </Execute>
+        <Execute>
+          <option name="pattern" value="Get-ChildItem -Path D:/Projects/Diplom_Yandex -Recurse -Include *.class | ForEach-Object { $_.FullName }" />
+        </Execute>
+        <Execute>
+          <option name="pattern" value="Get-ChildItem -Path D:/Projects/Diplom_Yandex -Recurse -Include *.jar | ForEach-Object { $_.FullName }" />
+        </Execute>
+        <Execute>
+          <option name="pattern" value="Get-ChildItem -Path &quot;D:/Projects/Diplom_Yandex&quot; -Recurse -Include &quot;application*.yml&quot;, &quot;application*.yaml&quot;, &quot;application*.properties&quot;, &quot;bootstrap*.yml&quot;, &quot;bootstrap*.yaml&quot;, &quot;bootstrap*.properties&quot; | ForEach-Object { $_.FullName }" />
+        </Execute>
+        <Execute>
+          <option name="pattern" value="Get-ChildItem -Path &quot;D:/Projects/Diplom_Yandex&quot; -Recurse -Include &quot;*.java&quot; | ForEach-Object { $_.FullName }" />
+        </Execute>
+        <Execute>
+          <option name="pattern" value="Get-ChildItem -Path &quot;D:/Projects/Diplom_Yandex&quot; -Recurse -Include &quot;*.class&quot; | ForEach-Object { $_.FullName }" />
+        </Execute>
+        <Execute>
+          <option name="pattern" value="Get-ChildItem -Path &quot;D:/Projects/Diplom_Yandex&quot; -Recurse -Include &quot;*.jar&quot; | ForEach-Object { $_.FullName }" />
+        </Execute>
+        <Execute>
+          <option name="pattern" value="mkdir -p D:/Projects/Diplom_Yandex/infra &amp;&amp; mkdir -p D:/Projects/Diplom_Yandex/core" />
+        </Execute>
+        <Execute>
+          <option name="pattern" value="mkdir &quot;D:/Projects/Diplom_Yandex/infra&quot; &quot;D:/Projects/Diplom_Yandex/core&quot;" />
+        </Execute>
+        <Execute>
+          <option name="pattern" value="mkdir &quot;D:/Projects/Diplom_Yandex/infra&quot;" />
+        </Execute>
+        <Execute>
+          <option name="pattern" value="mkdir &quot;D:/Projects/Diplom_Yandex/core&quot;" />
+        </Execute>
+        <Execute>
+          <option name="pattern" value="mkdir &quot;D:/Projects/Diplom_Yandex/infra/config-server&quot; &quot;D:/Projects/Diplom_Yandex/infra/discovery-server&quot; &quot;D:/Projects/Diplom_Yandex/infra/gateway-server&quot;" />
+        </Execute>
+        <Execute>
+          <option name="pattern" value="mkdir &quot;D:/Projects/Diplom_Yandex/infra/config-server&quot;" />
+        </Execute>
+        <Execute>
+          <option name="pattern" value="mkdir &quot;D:/Projects/Diplom_Yandex/infra/discovery-server&quot;" />
+        </Execute>
+        <Execute>
+          <option name="pattern" value="mkdir &quot;D:/Projects/Diplom_Yandex/infra/gateway-server&quot;" />
+        </Execute>
+        <Execute>
+          <option name="pattern" value="mv &quot;D:/Projects/Diplom_Yandex/core/main-service&quot; &quot;D:/Projects/Diplom_Yandex/core/&quot;" />
+        </Execute>
+      </list>
+    </option>
+  </component>
+</project>
