@@ -21,6 +21,9 @@ target/
 *.iml
 *.ipr
 .vscode/
+infa/
 ewm-main-service-postman.json
 ewm-stat-service-postman.json
-infa/
+ewm-main-service-spec.json
+ewm-stats-service-spec.json
+docker-compose.yml
