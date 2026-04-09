@@ -1,19 +1,25 @@
-server:
-  port: 8081
-
 spring:
   application:
     name: main-service
-  datasource:
-    driver-class-name: org.postgresql.Driver
-  jpa:
+  config:
+    import: optional:configserver:http://localhost:8888
+
+server:
+  port: 0
+
+spring.datasource:
+  driver-class-name: org.postgresql.Driver
+
+spring.jpa:
+  hibernate:
+    ddl-auto: create-drop
+  properties:
     hibernate:
-      ddl-auto: create-drop
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+      dialect: org.hibernate.dialect.PostgreSQLDialect
 
 eureka:
   client:
     serviceUrl:
       defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
