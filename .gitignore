@@ -26,4 +26,4 @@ ewm-main-service-postman.json
 ewm-stat-service-postman.json
 ewm-main-service-spec.json
 ewm-stats-service-spec.json
-docker-compose.yml
+
