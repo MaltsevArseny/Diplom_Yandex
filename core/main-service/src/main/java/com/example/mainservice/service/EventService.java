@@ -1,5 +1,6 @@
 package com.example.mainservice.service;
 
+import com.example.mainservice.client.StatsClient;
 import com.example.mainservice.dto.CategoryDto;
 import com.example.mainservice.dto.EventFullDto;
 import com.example.mainservice.dto.EventRequestStatusUpdateRequest;
@@ -10,6 +11,7 @@ import com.example.mainservice.dto.NewEventDto;
 import com.example.mainservice.dto.ParticipationRequestDto;
 import com.example.mainservice.dto.UpdateEventRequest;
 import com.example.mainservice.dto.UserShortDto;
+import com.example.mainservice.dto.ViewStatsDto;
 import com.example.mainservice.exception.BadRequestException;
 import com.example.mainservice.exception.ConflictException;
 import com.example.mainservice.exception.NotFoundException;
@@ -23,6 +25,7 @@ import com.example.mainservice.repository.CategoryRepository;
 import com.example.mainservice.repository.EventRepository;
 import com.example.mainservice.repository.RequestRepository;
 import com.example.mainservice.repository.UserRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -33,6 +36,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -48,6 +52,8 @@ public class EventService {
     private final CategoryRepository categoryRepository;
 
     private final RequestRepository requestRepository;
+
+    private final StatsClient statsClient;
 
     public List<EventFullDto> getAllByAdmin(
         List<Long> users,
@@ -177,28 +183,56 @@ public class EventService {
         Boolean onlyAvailable,
         String sort,
         Integer from,
-        Integer size
+        Integer size,
+        HttpServletRequest request
     ) {
-        LocalDateTime start = rangeStart != null ? LocalDateTime.parse(rangeStart, FORMATTER) : null;
+        LocalDateTime start = rangeStart != null ? LocalDateTime.parse(rangeStart, FORMATTER) : LocalDateTime.now();
         LocalDateTime end = rangeEnd != null ? LocalDateTime.parse(rangeEnd, FORMATTER) : null;
         if (start != null && end != null && start.isAfter(end)) {
             throw new BadRequestException("rangeStart must be before rangeEnd");
         }
         List<Long> catList = (categories != null && !categories.isEmpty()) ? categories : null;
+        statsClient.recordHit(request.getRequestURI(), request.getRemoteAddr());
         Sort pageSort = "VIEWS".equals(sort)
             ? Sort.by(Sort.Direction.DESC, "views")
             : Sort.by(Sort.Direction.ASC, "eventDate");
-        return eventRepository.findAllPublic(text, catList, paid, start, end,
+        List<Event> events = eventRepository.findAllPublic(text, catList, paid, start, end,
             onlyAvailable != null ? onlyAvailable : false,
-            PageRequest.of(from / size, size, pageSort))
-            .stream().map(this::toShortDto).collect(Collectors.toList());
+            PageRequest.of(from / size, size, pageSort)).getContent();
+
+        if (!events.isEmpty()) {
+            List<String> uris = events.stream()
+                .map(e -> "/events/" + e.getId())
+                .collect(Collectors.toList());
+            List<ViewStatsDto> stats = statsClient.getStats(
+                start.minusYears(1).format(FORMATTER),
+                LocalDateTime.now().plusYears(10).format(FORMATTER),
+                uris,
+                true
+            );
+            if (stats != null) {
+                Map<String, Long> viewsMap = stats.stream()
+                    .collect(Collectors.toMap(ViewStatsDto::getUri, ViewStatsDto::getHits));
+                events.forEach(e -> e.setViews(viewsMap.getOrDefault("/events/" + e.getId(), 0L)));
+            }
+        }
+
+        return events.stream().map(this::toShortDto).collect(Collectors.toList());
     }
 
-    public EventFullDto getPublicById(Long id) {
+    public EventFullDto getPublicById(Long id, HttpServletRequest request) {
         Event event = eventRepository.findByIdAndState(id, EventState.PUBLISHED)
             .orElseThrow(() -> new NotFoundException("Event with id=" + id + " was not found"));
-        event.setViews(event.getViews() + 1);
-        eventRepository.save(event);
+        statsClient.recordHit(request.getRequestURI(), request.getRemoteAddr());
+        List<ViewStatsDto> stats = statsClient.getStats(
+            LocalDateTime.now().minusYears(10).format(FORMATTER),
+            LocalDateTime.now().plusYears(10).format(FORMATTER),
+            List.of(request.getRequestURI()),
+            true
+        );
+        if (stats != null && !stats.isEmpty()) {
+            event.setViews(stats.get(0).getHits());
+        }
         return toFullDto(event);
     }
 

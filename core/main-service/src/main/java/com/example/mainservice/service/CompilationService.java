@@ -68,6 +68,7 @@ public class CompilationService {
         return toDto(compilationRepository.save(compilation));
     }
 
+    @Transactional(readOnly = true)
     public List<CompilationDto> getAll(Boolean pinned, Integer from, Integer size) {
         PageRequest pageable = PageRequest.of(from / size, size);
         if (pinned != null) {
@@ -80,12 +81,14 @@ public class CompilationService {
             .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public CompilationDto getById(Long compId) {
         Compilation compilation = compilationRepository.findById(compId)
             .orElseThrow(() -> new NotFoundException("Compilation with id=" + compId + " was not found"));
         return toDto(compilation);
     }
 
+    @Transactional(readOnly = true)
     private CompilationDto toDto(Compilation compilation) {
         Set<com.example.mainservice.dto.EventShortDto> eventShorts =
             compilation.getEvents() == null ? Collections.emptySet() :

@@ -9,6 +9,7 @@ import com.example.mainservice.dto.ParticipationRequestDto;
 import com.example.mainservice.dto.UpdateEventRequest;
 import com.example.mainservice.service.EventService;
 import com.example.mainservice.service.RequestService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -94,14 +95,15 @@ public class EventController {
         @RequestParam(defaultValue = "false") Boolean onlyAvailable,
         @RequestParam(required = false) String sort,
         @RequestParam(defaultValue = "0") Integer from,
-        @RequestParam(defaultValue = "10") Integer size
+        @RequestParam(defaultValue = "10") Integer size,
+        HttpServletRequest request
     ) {
-        return eventService.getAllPublic(text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
+        return eventService.getAllPublic(text, categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size, request);
     }
 
     @GetMapping("/events/{id}")
-    public EventFullDto getPublicById(@PathVariable Long id) {
-        return eventService.getPublicById(id);
+    public EventFullDto getPublicById(@PathVariable Long id, HttpServletRequest request) {
+        return eventService.getPublicById(id, request);
     }
 
     @GetMapping("/users/{userId}/events/{eventId}/requests")
