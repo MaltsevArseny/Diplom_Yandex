@@ -15,7 +15,10 @@ spring:
     show-sql: false
 
 server:
-  port: 8080
+  port: 8081
+
+stats-server:
+  url: ${STATS_SERVER_URL:http://localhost:9090}
 
 eureka:
   client:
