@@ -186,6 +186,7 @@ public class EventService {
         Integer size,
         HttpServletRequest request
     ) {
+        String searchText = (text != null && !text.isBlank()) ? text : null;
         LocalDateTime start = rangeStart != null ? LocalDateTime.parse(rangeStart, FORMATTER) : LocalDateTime.now();
         LocalDateTime end = rangeEnd != null ? LocalDateTime.parse(rangeEnd, FORMATTER) : null;
         if (start != null && end != null && start.isAfter(end)) {
@@ -196,7 +197,7 @@ public class EventService {
         Sort pageSort = "VIEWS".equals(sort)
             ? Sort.by(Sort.Direction.DESC, "views")
             : Sort.by(Sort.Direction.ASC, "eventDate");
-        List<Event> events = eventRepository.findAllPublic(text, catList, paid, start, end,
+        List<Event> events = eventRepository.findAllPublic(searchText, catList, paid, start, end,
             onlyAvailable != null ? onlyAvailable : false,
             PageRequest.of(from / size, size, pageSort)).getContent();
 
@@ -210,9 +211,13 @@ public class EventService {
                 uris,
                 true
             );
-            if (stats != null) {
+            if (stats != null && !stats.isEmpty()) {
                 Map<String, Long> viewsMap = stats.stream()
-                    .collect(Collectors.toMap(ViewStatsDto::getUri, ViewStatsDto::getHits));
+                    .collect(Collectors.toMap(
+                        ViewStatsDto::getUri,
+                        ViewStatsDto::getHits,
+                        (h1, h2) -> h1 + h2
+                    ));
                 events.forEach(e -> e.setViews(viewsMap.getOrDefault("/events/" + e.getId(), 0L)));
             }
         }
