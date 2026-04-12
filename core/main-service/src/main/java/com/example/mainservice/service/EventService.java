@@ -66,6 +66,9 @@ public class EventService {
         List<Long> catList = (categories != null && !categories.isEmpty()) ? categories : null;
         LocalDateTime start = rangeStart != null ? LocalDateTime.parse(rangeStart, FORMATTER) : null;
         LocalDateTime end = rangeEnd != null ? LocalDateTime.parse(rangeEnd, FORMATTER) : null;
+        if (start != null && end != null && start.isAfter(end)) {
+            throw new BadRequestException("rangeStart must be before rangeEnd");
+        }
         return eventRepository.findAllByAdmin(userList, stateList, catList, start, end,
             PageRequest.of(from / size, size)).stream()
             .map(this::toFullDto)
@@ -91,6 +94,9 @@ public class EventService {
                 }
                 event.setState(EventState.CANCELED);
             }
+        }
+        if (event.getEventDate().isBefore(LocalDateTime.now().plusHours(1))) {
+            throw new BadRequestException("Event date must be at least 1 hour from now for admin publication");
         }
         return toFullDto(eventRepository.save(event));
     }
@@ -147,6 +153,9 @@ public class EventService {
             .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
         if (event.getState() == EventState.PUBLISHED) {
             throw new ConflictException("Only pending or canceled events can be changed");
+        }
+        if (dto.getEventDate() != null && dto.getEventDate().isBefore(LocalDateTime.now().plusHours(2))) {
+            throw new BadRequestException("Event date must be at least 2 hours from now");
         }
         applyUpdate(event, dto);
         if (dto.getStateAction() != null) {
