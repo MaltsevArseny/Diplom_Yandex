@@ -14,10 +14,32 @@ public interface HitRepository extends JpaRepository<EndpointHit, Long> {
     @Query("SELECT new com.example.statsserver.dto.ViewStatsDto(h.app, h.uri, COUNT(h.ip)) "
         + "FROM EndpointHit h "
         + "WHERE h.timestamp BETWEEN :start AND :end "
-        + "AND (:uris IS NULL OR h.uri IN :uris) "
+        + "AND h.uri IN :uris "
         + "GROUP BY h.app, h.uri "
         + "ORDER BY COUNT(h.ip) DESC")
-    List<ViewStatsDto> findStats(
+    List<ViewStatsDto> findStatsWithUris(
+        @Param("start") LocalDateTime start,
+        @Param("end") LocalDateTime end,
+        @Param("uris") List<String> uris
+    );
+
+    @Query("SELECT new com.example.statsserver.dto.ViewStatsDto(h.app, h.uri, COUNT(h.ip)) "
+        + "FROM EndpointHit h "
+        + "WHERE h.timestamp BETWEEN :start AND :end "
+        + "GROUP BY h.app, h.uri "
+        + "ORDER BY COUNT(h.ip) DESC")
+    List<ViewStatsDto> findStatsWithoutUris(
+        @Param("start") LocalDateTime start,
+        @Param("end") LocalDateTime end
+    );
+
+    @Query("SELECT new com.example.statsserver.dto.ViewStatsDto(h.app, h.uri, COUNT(DISTINCT h.ip)) "
+        + "FROM EndpointHit h "
+        + "WHERE h.timestamp BETWEEN :start AND :end "
+        + "AND h.uri IN :uris "
+        + "GROUP BY h.app, h.uri "
+        + "ORDER BY COUNT(DISTINCT h.ip) DESC")
+    List<ViewStatsDto> findUniqueStatsWithUris(
         @Param("start") LocalDateTime start,
         @Param("end") LocalDateTime end,
         @Param("uris") List<String> uris
@@ -26,12 +48,10 @@ public interface HitRepository extends JpaRepository<EndpointHit, Long> {
     @Query("SELECT new com.example.statsserver.dto.ViewStatsDto(h.app, h.uri, COUNT(DISTINCT h.ip)) "
         + "FROM EndpointHit h "
         + "WHERE h.timestamp BETWEEN :start AND :end "
-        + "AND (:uris IS NULL OR h.uri IN :uris) "
         + "GROUP BY h.app, h.uri "
         + "ORDER BY COUNT(DISTINCT h.ip) DESC")
-    List<ViewStatsDto> findUniqueStats(
+    List<ViewStatsDto> findUniqueStatsWithoutUris(
         @Param("start") LocalDateTime start,
-        @Param("end") LocalDateTime end,
-        @Param("uris") List<String> uris
+        @Param("end") LocalDateTime end
     );
 }

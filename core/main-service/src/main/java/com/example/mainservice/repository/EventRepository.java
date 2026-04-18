@@ -12,7 +12,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-public interface EventRepository extends JpaRepository<Event, Long> {
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+
+public interface EventRepository extends JpaRepository<Event, Long>, JpaSpecificationExecutor<Event> {
 
     Page<Event> findAllByInitiatorId(Long userId, Pageable pageable);
 

@@ -59,26 +59,72 @@ public class EventService {
         List<Long> users,
         List<String> states,
         List<Long> categories,
-        String rangeStart,
-        String rangeEnd,
+        LocalDateTime rangeStart,
+        LocalDateTime rangeEnd,
         Integer from,
         Integer size
     ) {
-        List<EventState> stateList = null;
-        if (states != null && !states.isEmpty()) {
-            stateList = states.stream().map(EventState::valueOf).collect(Collectors.toList());
+        List<EventState> statesList = null;
+        if (states != null) {
+            try {
+                statesList = states.stream()
+                    .map(EventState::valueOf)
+                    .collect(Collectors.toList());
+            } catch (IllegalArgumentException e) {
+                throw new BadRequestException("Invalid event state");
+            }
         }
-        List<Long> userList = (users != null && !users.isEmpty()) ? users : null;
-        List<Long> catList = (categories != null && !categories.isEmpty()) ? categories : null;
-        LocalDateTime start = rangeStart != null ? LocalDateTime.parse(rangeStart, FORMATTER) : null;
-        LocalDateTime end = rangeEnd != null ? LocalDateTime.parse(rangeEnd, FORMATTER) : null;
-        if (start != null && end != null && start.isAfter(end)) {
+
+        if (rangeStart != null && rangeEnd != null && rangeStart.isAfter(rangeEnd)) {
             throw new BadRequestException("rangeStart must be before rangeEnd");
         }
-        return eventRepository.findAllByAdmin(userList, stateList, catList, start, end,
-            PageRequest.of(from / size, size)).stream()
-            .map(this::toFullDto)
-            .collect(Collectors.toList());
+        List<Long> catList = (categories != null && !categories.isEmpty()) ? categories : null;
+        final List<EventState> finalStatesList = statesList;
+
+        org.springframework.data.jpa.domain.Specification<Event> spec = (root, query, cb) -> {
+            List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
+            if (users != null && !users.isEmpty()) {
+                predicates.add(root.get("initiator").get("id").in(users));
+            }
+            if (finalStatesList != null && !finalStatesList.isEmpty()) {
+                predicates.add(root.get("state").in(finalStatesList));
+            }
+            if (catList != null && !catList.isEmpty()) {
+                predicates.add(root.get("category").get("id").in(catList));
+            }
+            if (rangeStart != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("eventDate"), rangeStart));
+            }
+            if (rangeEnd != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("eventDate"), rangeEnd));
+            }
+            return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+
+        List<Event> events = eventRepository.findAll(spec, PageRequest.of(from / size, size)).getContent();
+
+        if (!events.isEmpty()) {
+            List<String> uris = events.stream()
+                .map(e -> "/events/" + e.getId())
+                .collect(Collectors.toList());
+            List<ViewStatsDto> stats = statsClient.getStats(
+                LocalDateTime.now().minusYears(10).format(FORMATTER),
+                LocalDateTime.now().plusYears(10).format(FORMATTER),
+                uris,
+                true
+            );
+            if (stats != null && !stats.isEmpty()) {
+                Map<String, Long> viewsMap = stats.stream()
+                    .collect(Collectors.toMap(
+                        ViewStatsDto::getUri,
+                        ViewStatsDto::getHits,
+                        (h1, h2) -> h1 + h2
+                    ));
+                events.forEach(e -> e.setViews(viewsMap.getOrDefault("/events/" + e.getId(), 0L)));
+            }
+        }
+
+        return events.stream().map(this::toFullDto).collect(Collectors.toList());
     }
 
     @Transactional
@@ -178,8 +224,8 @@ public class EventService {
         String text,
         List<Long> categories,
         Boolean paid,
-        String rangeStart,
-        String rangeEnd,
+        LocalDateTime rangeStart,
+        LocalDateTime rangeEnd,
         Boolean onlyAvailable,
         String sort,
         Integer from,
@@ -187,8 +233,8 @@ public class EventService {
         HttpServletRequest request
     ) {
         String searchText = (text != null && !text.isBlank()) ? text : null;
-        LocalDateTime start = rangeStart != null ? LocalDateTime.parse(rangeStart, FORMATTER) : LocalDateTime.now();
-        LocalDateTime end = rangeEnd != null ? LocalDateTime.parse(rangeEnd, FORMATTER) : null;
+        LocalDateTime start = rangeStart != null ? rangeStart : LocalDateTime.now();
+        LocalDateTime end = rangeEnd;
         if (start != null && end != null && start.isAfter(end)) {
             throw new BadRequestException("rangeStart must be before rangeEnd");
         }
@@ -197,9 +243,40 @@ public class EventService {
         Sort pageSort = "VIEWS".equals(sort)
             ? Sort.by(Sort.Direction.DESC, "views")
             : Sort.by(Sort.Direction.ASC, "eventDate");
-        List<Event> events = eventRepository.findAllPublic(searchText, catList, paid, start, end,
-            onlyAvailable != null ? onlyAvailable : false,
-            PageRequest.of(from / size, size, pageSort)).getContent();
+
+        org.springframework.data.jpa.domain.Specification<Event> spec = (root, query, cb) -> {
+            List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("state"), EventState.PUBLISHED));
+
+            if (searchText != null) {
+                String likeText = "%" + searchText.toLowerCase() + "%";
+                predicates.add(cb.or(
+                    cb.like(cb.lower(root.get("annotation")), likeText),
+                    cb.like(cb.lower(root.get("description")), likeText)
+                ));
+            }
+            if (catList != null && !catList.isEmpty()) {
+                predicates.add(root.get("category").get("id").in(catList));
+            }
+            if (paid != null) {
+                predicates.add(cb.equal(root.get("paid"), paid));
+            }
+            if (start != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("eventDate"), start));
+            }
+            if (end != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("eventDate"), end));
+            }
+            if (onlyAvailable != null && onlyAvailable) {
+                predicates.add(cb.or(
+                    cb.equal(root.get("participantLimit"), 0),
+                    cb.lessThan(root.get("confirmedRequests"), root.get("participantLimit"))
+                ));
+            }
+            return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+        };
+
+        List<Event> events = eventRepository.findAll(spec, PageRequest.of(from / size, size, pageSort)).getContent();
 
         if (!events.isEmpty()) {
             List<String> uris = events.stream()

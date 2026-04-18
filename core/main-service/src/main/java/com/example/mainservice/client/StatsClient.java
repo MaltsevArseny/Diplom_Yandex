@@ -41,19 +41,26 @@ public class StatsClient {
 
     public List<ViewStatsDto> getStats(String start, String end, List<String> uris, Boolean unique) {
         try {
-            StringBuilder url = new StringBuilder(serverUrl + "/stats?start=" + start + "&end=" + end);
+            java.util.Map<String, Object> parameters = new java.util.HashMap<>();
+            parameters.put("start", start);
+            parameters.put("end", end);
+
+            StringBuilder url = new StringBuilder(serverUrl + "/stats?start={start}&end={end}");
             if (uris != null && !uris.isEmpty()) {
-                url.append("&uris=").append(String.join(",", uris));
+                url.append("&uris={uris}");
+                parameters.put("uris", String.join(",", uris));
             }
             if (unique != null) {
-                url.append("&unique=").append(unique);
+                url.append("&unique={unique}");
+                parameters.put("unique", unique);
             }
 
             ResponseEntity<List<ViewStatsDto>> response = rest.exchange(
                 url.toString(),
                 HttpMethod.GET,
                 null,
-                new ParameterizedTypeReference<List<ViewStatsDto>>() {}
+                new ParameterizedTypeReference<List<ViewStatsDto>>() {},
+                parameters
             );
             return response.getBody();
         } catch (Exception e) {

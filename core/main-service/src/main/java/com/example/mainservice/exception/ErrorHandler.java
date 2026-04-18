@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
@@ -97,6 +98,28 @@ public class ErrorHandler {
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiError handleMissingParam(MissingServletRequestParameterException ex) {
+        return ApiError.builder()
+            .status("BAD_REQUEST")
+            .reason("Incorrectly made request.")
+            .message(ex.getMessage())
+            .timestamp(LocalDateTime.now())
+            .build();
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiError handleDateTimeParse(DateTimeParseException ex) {
+        return ApiError.builder()
+            .status("BAD_REQUEST")
+            .reason("Incorrectly made request.")
+            .message(ex.getMessage())
+            .timestamp(LocalDateTime.now())
+            .build();
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiError handleIllegalArgument(IllegalArgumentException ex) {
         return ApiError.builder()
             .status("BAD_REQUEST")
             .reason("Incorrectly made request.")

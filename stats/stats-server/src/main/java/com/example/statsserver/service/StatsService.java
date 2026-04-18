@@ -41,10 +41,23 @@ public class StatsService {
     public List<ViewStatsDto> getStats(String start, String end, List<String> uris, Boolean unique) {
         LocalDateTime startDt = LocalDateTime.parse(start, FORMATTER);
         LocalDateTime endDt = LocalDateTime.parse(end, FORMATTER);
+        if (startDt.isAfter(endDt)) {
+            throw new com.example.statsserver.exception.BadRequestException("start must be before end");
+        }
+        
         List<String> uriList = (uris == null || uris.isEmpty()) ? null : uris;
         if (Boolean.TRUE.equals(unique)) {
-            return hitRepository.findUniqueStats(startDt, endDt, uriList);
+            if (uriList != null) {
+                return hitRepository.findUniqueStatsWithUris(startDt, endDt, uriList);
+            } else {
+                return hitRepository.findUniqueStatsWithoutUris(startDt, endDt);
+            }
+        } else {
+            if (uriList != null) {
+                return hitRepository.findStatsWithUris(startDt, endDt, uriList);
+            } else {
+                return hitRepository.findStatsWithoutUris(startDt, endDt);
+            }
         }
-        return hitRepository.findStats(startDt, endDt, uriList);
     }
 }
