@@ -341,6 +341,11 @@ public class EventService {
             .orElseThrow(() -> new NotFoundException("User with id=" + userId + " was not found"));
         Event event = eventRepository.findByIdAndInitiatorId(eventId, userId)
             .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
+        if ("CONFIRMED".equals(updateRequest.getStatus())
+            && event.getParticipantLimit() != 0
+            && event.getConfirmedRequests() >= event.getParticipantLimit()) {
+            throw new ConflictException("The participant limit for the event has been reached");
+        }
         List<ParticipationRequest> requests = requestRepository.findAllByIdIn(updateRequest.getRequestIds());
         List<ParticipationRequestDto> confirmed = new ArrayList<>();
         List<ParticipationRequestDto> rejected = new ArrayList<>();

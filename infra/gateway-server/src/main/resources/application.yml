@@ -19,13 +19,19 @@ spring:
           uri: lb://stats-server
           predicates:
             - Path=/hit, /stats
+    loadbalancer:
+      cache:
+        ttl: 5s
 
 eureka:
   client:
     serviceUrl:
       defaultZone: ${EUREKA_URI:http://localhost:8761/eureka/}
+    registry-fetch-interval-seconds: 5
   instance:
     prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 5
+    lease-expiry-duration-in-seconds: 15
 
 management:
   endpoints:
