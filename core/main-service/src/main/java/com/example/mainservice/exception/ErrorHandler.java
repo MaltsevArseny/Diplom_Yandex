@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.stream.Collectors;
@@ -34,6 +35,7 @@ public class ErrorHandler {
 
         private String message;
 
+        @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
         private LocalDateTime timestamp;
     }
 

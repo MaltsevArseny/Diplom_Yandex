@@ -131,12 +131,18 @@ public class EventService {
     public EventFullDto updateByAdmin(Long eventId, UpdateEventRequest dto) {
         Event event = eventRepository.findById(eventId)
             .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
+        if (dto.getEventDate() != null && dto.getEventDate().isBefore(LocalDateTime.now().plusHours(1))) {
+            throw new BadRequestException("Event date must be at least 1 hour from now");
+        }
         applyUpdate(event, dto);
         if (dto.getStateAction() != null) {
             if ("PUBLISH_EVENT".equals(dto.getStateAction())) {
                 if (event.getState() != EventState.PENDING) {
                     throw new ConflictException("Cannot publish the event because it's not in the right state: "
                         + event.getState());
+                }
+                if (event.getEventDate().isBefore(LocalDateTime.now().plusHours(1))) {
+                    throw new ConflictException("Event date must be at least 1 hour from publication date");
                 }
                 event.setState(EventState.PUBLISHED);
                 event.setPublishedOn(LocalDateTime.now());
@@ -146,9 +152,6 @@ public class EventService {
                 }
                 event.setState(EventState.CANCELED);
             }
-        }
-        if (event.getEventDate().isBefore(LocalDateTime.now().plusHours(1))) {
-            throw new BadRequestException("Event date must be at least 1 hour from now for admin publication");
         }
         return toFullDto(eventRepository.save(event));
     }
