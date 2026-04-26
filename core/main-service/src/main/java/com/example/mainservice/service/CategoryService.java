@@ -1,6 +1,7 @@
 package com.example.mainservice.service;
 
 import com.example.mainservice.dto.CategoryDto;
+import com.example.mainservice.exception.ConditionsNotMetException;
 import com.example.mainservice.exception.ConflictException;
 import com.example.mainservice.exception.NotFoundException;
 import com.example.mainservice.model.Category;
@@ -39,7 +40,7 @@ public class CategoryService {
         Category category = categoryRepository.findById(catId)
             .orElseThrow(() -> new NotFoundException("Category with id=" + catId + " was not found"));
         if (eventRepository.existsByCategoryId(catId)) {
-            throw new ConflictException("The category is not empty");
+            throw new ConditionsNotMetException("The category is not empty");
         }
         categoryRepository.delete(category);
     }

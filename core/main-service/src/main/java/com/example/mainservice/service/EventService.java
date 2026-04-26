@@ -13,7 +13,9 @@ import com.example.mainservice.dto.UpdateEventRequest;
 import com.example.mainservice.dto.UserShortDto;
 import com.example.mainservice.dto.ViewStatsDto;
 import com.example.mainservice.exception.BadRequestException;
+import com.example.mainservice.exception.ConditionsNotMetException;
 import com.example.mainservice.exception.ConflictException;
+import com.example.mainservice.exception.ForbiddenOperationException;
 import com.example.mainservice.exception.NotFoundException;
 import com.example.mainservice.model.Category;
 import com.example.mainservice.model.Event;
@@ -131,27 +133,27 @@ public class EventService {
     public EventFullDto updateByAdmin(Long eventId, UpdateEventRequest dto) {
         Event event = eventRepository.findById(eventId)
             .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
-        if (dto.getEventDate() != null && dto.getEventDate().isBefore(LocalDateTime.now().plusHours(1))) {
-            throw new BadRequestException("Event date must be at least 1 hour from now");
-        }
         applyUpdate(event, dto);
         if (dto.getStateAction() != null) {
             if ("PUBLISH_EVENT".equals(dto.getStateAction())) {
                 if (event.getState() != EventState.PENDING) {
-                    throw new ConflictException("Cannot publish the event because it's not in the right state: "
+                    throw new ForbiddenOperationException("Cannot publish the event because it's not in the right state: "
                         + event.getState());
                 }
                 if (event.getEventDate().isBefore(LocalDateTime.now().plusHours(1))) {
-                    throw new ConflictException("Event date must be at least 1 hour from publication date");
+                    throw new ForbiddenOperationException("Event date must be at least 1 hour from publication date");
                 }
                 event.setState(EventState.PUBLISHED);
                 event.setPublishedOn(LocalDateTime.now());
             } else if ("REJECT_EVENT".equals(dto.getStateAction())) {
                 if (event.getState() == EventState.PUBLISHED) {
-                    throw new ConflictException("Cannot reject the event because it's already published");
+                    throw new ForbiddenOperationException("Cannot reject the event because it's already published");
                 }
                 event.setState(EventState.CANCELED);
             }
+        }
+        if (dto.getEventDate() != null && dto.getEventDate().isBefore(LocalDateTime.now().plusHours(1))) {
+            throw new ForbiddenOperationException("Event date must be at least 1 hour from now");
         }
         return toFullDto(eventRepository.save(event));
     }
@@ -170,7 +172,7 @@ public class EventService {
         Category category = categoryRepository.findById(dto.getCategory())
             .orElseThrow(() -> new NotFoundException("Category with id=" + dto.getCategory() + " was not found"));
         if (dto.getEventDate() != null && dto.getEventDate().isBefore(LocalDateTime.now().plusHours(2))) {
-            throw new BadRequestException("Event date must be at least 2 hours from now");
+            throw new ForbiddenOperationException("Field: eventDate. Error: должно содержать дату, которая еще не наступила. Value: " + dto.getEventDate());
         }
         Event event = Event.builder()
             .annotation(dto.getAnnotation())
@@ -207,10 +209,10 @@ public class EventService {
         Event event = eventRepository.findByIdAndInitiatorId(eventId, userId)
             .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
         if (event.getState() == EventState.PUBLISHED) {
-            throw new ConflictException("Only pending or canceled events can be changed");
+            throw new ForbiddenOperationException("Only pending or canceled events can be changed");
         }
         if (dto.getEventDate() != null && dto.getEventDate().isBefore(LocalDateTime.now().plusHours(2))) {
-            throw new BadRequestException("Event date must be at least 2 hours from now");
+            throw new ForbiddenOperationException("Field: eventDate. Error: должно содержать дату, которая еще не наступила. Value: " + dto.getEventDate());
         }
         applyUpdate(event, dto);
         if (dto.getStateAction() != null) {
@@ -344,7 +346,7 @@ public class EventService {
         if ("CONFIRMED".equals(updateRequest.getStatus())
             && event.getParticipantLimit() != 0
             && event.getConfirmedRequests() >= event.getParticipantLimit()) {
-            throw new ConflictException("The participant limit for the event has been reached");
+            throw new ConditionsNotMetException("The participant limit has been reached");
         }
         List<ParticipationRequest> requests = requestRepository.findAllByIdIn(updateRequest.getRequestIds());
         List<ParticipationRequestDto> confirmed = new ArrayList<>();

@@ -9,7 +9,9 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import java.net.URI;
 import java.util.List;
 
 @Slf4j
@@ -41,26 +43,20 @@ public class StatsClient {
 
     public List<ViewStatsDto> getStats(String start, String end, List<String> uris, Boolean unique) {
         try {
-            java.util.Map<String, Object> parameters = new java.util.HashMap<>();
-            parameters.put("start", start);
-            parameters.put("end", end);
-
-            StringBuilder url = new StringBuilder(serverUrl + "/stats?start={start}&end={end}");
+            UriComponentsBuilder builder = UriComponentsBuilder
+                .fromHttpUrl(serverUrl + "/stats")
+                .queryParam("start", start)
+                .queryParam("end", end)
+                .queryParam("unique", unique != null ? unique : false);
             if (uris != null && !uris.isEmpty()) {
-                url.append("&uris={uris}");
-                parameters.put("uris", String.join(",", uris));
+                builder.queryParam("uris", uris.toArray());
             }
-            if (unique != null) {
-                url.append("&unique={unique}");
-                parameters.put("unique", unique);
-            }
-
+            URI requestUri = builder.build().encode().toUri();
             ResponseEntity<List<ViewStatsDto>> response = rest.exchange(
-                url.toString(),
+                requestUri,
                 HttpMethod.GET,
                 null,
-                new ParameterizedTypeReference<List<ViewStatsDto>>() {},
-                parameters
+                new ParameterizedTypeReference<List<ViewStatsDto>>() {}
             );
             return response.getBody();
         } catch (Exception e) {
