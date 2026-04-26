@@ -5,6 +5,7 @@ import com.example.mainservice.dto.NewCompilationDto;
 import com.example.mainservice.dto.UpdateCompilationRequest;
 import com.example.mainservice.exception.BadRequestException;
 import com.example.mainservice.exception.NotFoundException;
+import com.example.mainservice.mapper.EventMapper;
 import com.example.mainservice.model.Compilation;
 import com.example.mainservice.model.Event;
 import com.example.mainservice.repository.CompilationRepository;
@@ -28,7 +29,7 @@ public class CompilationService {
 
     private final EventRepository eventRepository;
 
-    private final EventService eventService;
+    private final EventMapper eventMapper;
 
     @Transactional
     public CompilationDto create(NewCompilationDto dto) {
@@ -97,7 +98,7 @@ public class CompilationService {
         Set<com.example.mainservice.dto.EventShortDto> eventShorts =
             compilation.getEvents() == null ? Collections.emptySet() :
             compilation.getEvents().stream()
-                .map(eventService::toShortDto)
+                .map(eventMapper::toShortDto)
                 .collect(Collectors.toSet());
         return CompilationDto.builder()
             .id(compilation.getId())
