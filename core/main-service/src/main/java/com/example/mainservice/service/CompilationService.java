@@ -3,6 +3,7 @@ package com.example.mainservice.service;
 import com.example.mainservice.dto.CompilationDto;
 import com.example.mainservice.dto.NewCompilationDto;
 import com.example.mainservice.dto.UpdateCompilationRequest;
+import com.example.mainservice.exception.BadRequestException;
 import com.example.mainservice.exception.NotFoundException;
 import com.example.mainservice.model.Compilation;
 import com.example.mainservice.model.Event;
@@ -53,6 +54,9 @@ public class CompilationService {
 
     @Transactional
     public CompilationDto update(Long compId, UpdateCompilationRequest dto) {
+        if (dto.getTitle() != null && (dto.getTitle().isBlank() || dto.getTitle().length() > 50)) {
+            throw new BadRequestException("Title must be between 1 and 50 characters");
+        }
         Compilation compilation = compilationRepository.findById(compId)
             .orElseThrow(() -> new NotFoundException("Compilation with id=" + compId + " was not found"));
         if (dto.getEvents() != null) {

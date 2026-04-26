@@ -153,7 +153,7 @@ public class EventService {
             }
         }
         if (dto.getEventDate() != null && dto.getEventDate().isBefore(LocalDateTime.now().plusHours(1))) {
-            throw new ForbiddenOperationException("Event date must be at least 1 hour from now");
+            throw new BadRequestException("Event date must be at least 1 hour from now");
         }
         return toFullDto(eventRepository.save(event));
     }
@@ -172,7 +172,7 @@ public class EventService {
         Category category = categoryRepository.findById(dto.getCategory())
             .orElseThrow(() -> new NotFoundException("Category with id=" + dto.getCategory() + " was not found"));
         if (dto.getEventDate() != null && dto.getEventDate().isBefore(LocalDateTime.now().plusHours(2))) {
-            throw new ForbiddenOperationException("Field: eventDate. Error: должно содержать дату, которая еще не наступила. Value: " + dto.getEventDate());
+            throw new BadRequestException("Event date must be at least 2 hours from now");
         }
         Event event = Event.builder()
             .annotation(dto.getAnnotation())
@@ -212,7 +212,7 @@ public class EventService {
             throw new ForbiddenOperationException("Only pending or canceled events can be changed");
         }
         if (dto.getEventDate() != null && dto.getEventDate().isBefore(LocalDateTime.now().plusHours(2))) {
-            throw new ForbiddenOperationException("Field: eventDate. Error: должно содержать дату, которая еще не наступила. Value: " + dto.getEventDate());
+            throw new BadRequestException("Event date must be at least 2 hours from now");
         }
         applyUpdate(event, dto);
         if (dto.getStateAction() != null) {
