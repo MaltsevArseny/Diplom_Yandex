@@ -3,6 +3,7 @@ package com.example.mainservice.service;
 import com.example.mainservice.dto.ParticipationRequestDto;
 import com.example.mainservice.exception.ConflictException;
 import com.example.mainservice.exception.NotFoundException;
+import com.example.mainservice.mapper.EventMapper;
 import com.example.mainservice.model.Event;
 import com.example.mainservice.model.EventState;
 import com.example.mainservice.model.ParticipationRequest;
@@ -29,11 +30,13 @@ public class RequestService {
 
     private final EventRepository eventRepository;
 
+    private final EventMapper eventMapper;
+
     public List<ParticipationRequestDto> getByUser(Long userId) {
         userRepository.findById(userId)
             .orElseThrow(() -> new NotFoundException("User with id=" + userId + " was not found"));
         return requestRepository.findAllByRequesterId(userId).stream()
-            .map(this::toDto)
+            .map(eventMapper::toRequestDto)
             .collect(Collectors.toList());
     }
 
@@ -69,7 +72,7 @@ public class RequestService {
             event.setConfirmedRequests(event.getConfirmedRequests() + 1);
             eventRepository.save(event);
         }
-        return toDto(requestRepository.save(request));
+        return eventMapper.toRequestDto(requestRepository.save(request));
     }
 
     @Transactional
@@ -77,16 +80,6 @@ public class RequestService {
         ParticipationRequest request = requestRepository.findByIdAndRequesterId(requestId, userId)
             .orElseThrow(() -> new NotFoundException("Request with id=" + requestId + " was not found"));
         request.setStatus(RequestStatus.CANCELED);
-        return toDto(requestRepository.save(request));
-    }
-
-    private ParticipationRequestDto toDto(ParticipationRequest request) {
-        return ParticipationRequestDto.builder()
-            .id(request.getId())
-            .created(request.getCreated())
-            .event(request.getEvent().getId())
-            .requester(request.getRequester().getId())
-            .status(request.getStatus().name())
-            .build();
+        return eventMapper.toRequestDto(requestRepository.save(request));
     }
 }

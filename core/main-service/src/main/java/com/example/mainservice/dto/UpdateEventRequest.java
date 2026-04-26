@@ -1,5 +1,6 @@
 package com.example.mainservice.dto;
 
+import com.example.mainservice.model.StateAction;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
@@ -36,7 +37,7 @@ public class UpdateEventRequest {
 
     private Boolean requestModeration;
 
-    private String stateAction;
+    private StateAction stateAction;
 
     @Size(min = 3, max = 120)
     private String title;

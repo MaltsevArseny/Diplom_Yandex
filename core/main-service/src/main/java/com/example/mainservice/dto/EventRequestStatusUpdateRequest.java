@@ -1,5 +1,6 @@
 package com.example.mainservice.dto;
 
+import com.example.mainservice.model.RequestStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,5 +16,5 @@ public class EventRequestStatusUpdateRequest {
 
     private List<Long> requestIds;
 
-    private String status;
+    private RequestStatus status;
 }

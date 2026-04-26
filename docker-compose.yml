@@ -51,11 +51,14 @@ services:
         condition: service_healthy
       discovery-server:
         condition: service_healthy
+      config-server:
+        condition: service_healthy
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://stats-db:5432/ewm-stat
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=password
       - EUREKA_URI=http://discovery-server:8761/eureka/
+      - CONFIG_SERVER_URI=http://config-server:8888
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9090/actuator/health"]
       interval: 10s
@@ -84,12 +87,15 @@ services:
         condition: service_healthy
       discovery-server:
         condition: service_healthy
+      config-server:
+        condition: service_healthy
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://ewm-db:5432/ewm-main
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=password
       - EUREKA_URI=http://discovery-server:8761/eureka/
       - STATS_SERVER_URL=http://stats-server:9090
+      - CONFIG_SERVER_URI=http://config-server:8888
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
       interval: 10s

@@ -1,21 +1,8 @@
 spring:
   application:
     name: stats-server
-  datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/ewm-stat}
-    username: ${SPRING_DATASOURCE_USERNAME:root}
-    password: ${SPRING_DATASOURCE_PASSWORD:root}
-    driver-class-name: org.postgresql.Driver
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-    show-sql: false
-
-server:
-  port: 9090
+  config:
+    import: "optional:configserver:${CONFIG_SERVER_URI:http://localhost:8888}"
 
 eureka:
   client:
@@ -26,9 +13,3 @@ eureka:
     prefer-ip-address: true
     lease-renewal-interval-in-seconds: 5
     lease-expiry-duration-in-seconds: 15
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,env
