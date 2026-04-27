@@ -16,6 +16,8 @@ spring:
     show-sql: false
 
 management:
+  server:
+    port: 9091
   endpoints:
     web:
       exposure:

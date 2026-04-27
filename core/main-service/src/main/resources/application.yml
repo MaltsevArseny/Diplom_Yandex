@@ -5,7 +5,7 @@ spring:
     import: "optional:configserver:${CONFIG_SERVER_URI:http://localhost:8888}"
 
 stats-server:
-  url: ${STATS_SERVER_URL:http://localhost:9090}
+  url: ${STATS_SERVER_URL:http://stats-server}
 
 eureka:
   client:
