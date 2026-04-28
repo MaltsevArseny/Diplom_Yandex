@@ -77,9 +77,32 @@ services:
       timeout: 5s
       retries: 10
 
-  ewm-service:
-    build: core/main-service
-    container_name: ewm-service
+  user-service:
+    build: core/user-service
+    container_name: user-service
+    depends_on:
+      ewm-db:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://ewm-db:5432/ewm-main
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=password
+      - EUREKA_URI=http://discovery-server:8761/eureka/
+      - CONFIG_SERVER_URI=http://config-server:8888
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 40s
+
+  event-service:
+    build: core/event-service
+    container_name: event-service
     depends_on:
       ewm-db:
         condition: service_healthy
@@ -101,6 +124,29 @@ services:
       retries: 15
       start_period: 40s
 
+  request-service:
+    build: core/request-service
+    container_name: request-service
+    depends_on:
+      ewm-db:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://ewm-db:5432/ewm-main
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=password
+      - EUREKA_URI=http://discovery-server:8761/eureka/
+      - CONFIG_SERVER_URI=http://config-server:8888
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 40s
+
   gateway-server:
     build: infra/gateway-server
     container_name: gateway-server
@@ -109,7 +155,11 @@ services:
     depends_on:
       discovery-server:
         condition: service_healthy
-      ewm-service:
+      event-service:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+      request-service:
         condition: service_healthy
       stats-server:
         condition: service_healthy
