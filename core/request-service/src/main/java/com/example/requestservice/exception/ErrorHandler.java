@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 
 import java.time.LocalDateTime;
 
@@ -49,14 +50,21 @@ public class ErrorHandler {
             .message(ex.getMessage()).timestamp(LocalDateTime.now()).build();
     }
 
-    @ExceptionHandler
+    @ExceptionHandler(ConstraintViolationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiError handleConstraintViolation(ConstraintViolationException ex) {
         return ApiError.builder().status("BAD_REQUEST").reason("Incorrectly made request.")
             .message(ex.getMessage()).timestamp(LocalDateTime.now()).build();
     }
 
-    @ExceptionHandler
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiError handleMissingParam(MissingServletRequestParameterException ex) {
+        return ApiError.builder().status("BAD_REQUEST").reason("Incorrectly made request.")
+            .message(ex.getMessage()).timestamp(LocalDateTime.now()).build();
+    }
+
+    @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ApiError handleGeneral(Exception ex) {
         return ApiError.builder().status("INTERNAL_SERVER_ERROR").reason("An unexpected error occurred.")

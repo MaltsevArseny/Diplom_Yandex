@@ -52,8 +52,8 @@ public class RequestService {
         if (!"PUBLISHED".equals(event.getState())) {
             throw new ConflictException("Event is not published");
         }
-        if (event.getParticipantLimit() != 0
-            && event.getConfirmedRequests() >= event.getParticipantLimit()) {
+        long confirmedCount = requestRepository.countByEventIdAndStatus(eventId, RequestStatus.CONFIRMED);
+        if (event.getParticipantLimit() != 0 && confirmedCount >= event.getParticipantLimit()) {
             throw new ConflictException("Participant limit reached");
         }
         RequestStatus status = (!event.getRequestModeration() || event.getParticipantLimit() == 0)
@@ -82,6 +82,9 @@ public class RequestService {
     public ParticipationRequestDto cancel(Long userId, Long requestId) {
         ParticipationRequest request = requestRepository.findByIdAndRequesterId(requestId, userId)
             .orElseThrow(() -> new NotFoundException("Request with id=" + requestId + " was not found"));
+        if (request.getStatus() == RequestStatus.CONFIRMED) {
+            throw new ConflictException("Cannot cancel already accepted participation request");
+        }
         RequestStatus prevStatus = request.getStatus();
         request.setStatus(RequestStatus.CANCELED);
         request = requestRepository.save(request);
