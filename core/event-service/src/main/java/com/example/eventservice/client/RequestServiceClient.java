@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.util.List;
 import java.util.Map;
 
-@FeignClient(name = "request-service", fallback = RequestServiceClientFallback.class)
+@FeignClient(name = "request-service", fallbackFactory = RequestServiceClientFallbackFactory.class)
 public interface RequestServiceClient {
 
     @GetMapping("/internal/requests/events")

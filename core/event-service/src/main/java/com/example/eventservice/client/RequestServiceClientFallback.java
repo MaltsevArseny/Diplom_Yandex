@@ -3,13 +3,10 @@ package com.example.eventservice.client;
 import com.example.eventservice.dto.EventRequestStatusUpdateRequest;
 import com.example.eventservice.dto.EventRequestStatusUpdateResult;
 import com.example.eventservice.dto.ParticipationRequestDto;
-import org.springframework.stereotype.Component;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-@Component
 public class RequestServiceClientFallback implements RequestServiceClient {
 
     @Override
