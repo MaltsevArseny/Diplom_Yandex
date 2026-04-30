@@ -79,6 +79,9 @@ public class RequestService {
     public ParticipationRequestDto cancel(Long userId, Long requestId) {
         ParticipationRequest request = requestRepository.findByIdAndRequesterId(requestId, userId)
             .orElseThrow(() -> new NotFoundException("Request with id=" + requestId + " was not found"));
+        if (request.getStatus() == RequestStatus.CONFIRMED) {
+            throw new ConflictException("Cannot cancel already accepted participation request");
+        }
         request.setStatus(RequestStatus.CANCELED);
         return eventMapper.toRequestDto(requestRepository.save(request));
     }
