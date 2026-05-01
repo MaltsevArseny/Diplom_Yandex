@@ -64,11 +64,11 @@ services:
       retries: 15
       start_period: 40s
 
-  ewm-db:
+  user-db:
     image: postgres:16.1
-    container_name: ewm-db
+    container_name: user-db
     environment:
-      - POSTGRES_DB=ewm-main
+      - POSTGRES_DB=ewm-user
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
     healthcheck:
@@ -81,14 +81,14 @@ services:
     build: core/user-service
     container_name: user-service
     depends_on:
-      ewm-db:
+      user-db:
         condition: service_healthy
       discovery-server:
         condition: service_healthy
       config-server:
         condition: service_healthy
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://ewm-db:5432/ewm-main
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://user-db:5432/ewm-user
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=password
       - EUREKA_URI=http://discovery-server:8761/eureka/
@@ -100,18 +100,31 @@ services:
       retries: 15
       start_period: 40s
 
+  event-db:
+    image: postgres:16.1
+    container_name: event-db
+    environment:
+      - POSTGRES_DB=ewm-event
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   event-service:
     build: core/event-service
     container_name: event-service
     depends_on:
-      ewm-db:
+      event-db:
         condition: service_healthy
       discovery-server:
         condition: service_healthy
       config-server:
         condition: service_healthy
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://ewm-db:5432/ewm-main
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://event-db:5432/ewm-event
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=password
       - EUREKA_URI=http://discovery-server:8761/eureka/
@@ -124,18 +137,31 @@ services:
       retries: 15
       start_period: 40s
 
+  request-db:
+    image: postgres:16.1
+    container_name: request-db
+    environment:
+      - POSTGRES_DB=ewm-request
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   request-service:
     build: core/request-service
     container_name: request-service
     depends_on:
-      ewm-db:
+      request-db:
         condition: service_healthy
       discovery-server:
         condition: service_healthy
       config-server:
         condition: service_healthy
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://ewm-db:5432/ewm-main
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://request-db:5432/ewm-request
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=password
       - EUREKA_URI=http://discovery-server:8761/eureka/

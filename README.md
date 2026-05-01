@@ -31,12 +31,12 @@ Infrastructure:
 
 ### Microservices
 
-| Service | Description | Database Tables |
-|---|---|---|
-| **event-service** | Events, categories, compilations | events, categories, compilations, compilation_events |
-| **user-service** | User management | users |
-| **request-service** | Participation requests | requests |
-| **stats-server** | Hit statistics | endpoint_hits |
+| Service | Description | Database | Tables |
+|---|---|---|---|
+| **event-service** | Events, categories, compilations | `ewm-event` | events, categories, compilations, compilation_events |
+| **user-service** | User management | `ewm-user` | users |
+| **request-service** | Participation requests | `ewm-request` | requests |
+| **stats-server** | Hit statistics | `ewm-stat` | endpoint_hits |
 
 ### Inter-service Communication
 
