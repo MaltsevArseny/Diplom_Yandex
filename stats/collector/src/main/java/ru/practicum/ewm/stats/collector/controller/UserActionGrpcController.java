@@ -4,6 +4,8 @@ import com.google.protobuf.Empty;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import java.time.Instant;
 import net.devh.boot.grpc.server.service.GrpcService;
 import ru.practicum.ewm.stats.avro.ActionTypeAvro;
 import ru.practicum.ewm.stats.avro.UserActionAvro;
@@ -26,7 +28,7 @@ public class UserActionGrpcController extends UserActionControllerGrpc.UserActio
             .setUserId(request.getUserId())
             .setEventId(request.getEventId())
             .setActionType(toAvro(request.getActionType()))
-            .setTimestamp(request.getTimestamp().getSeconds() * 1000 + request.getTimestamp().getNanos() / 1_000_000)
+            .setTimestamp(Instant.ofEpochMilli(request.getTimestamp().getSeconds() * 1000 + request.getTimestamp().getNanos() / 1_000_000))
             .build();
         producer.send(avro);
         responseObserver.onNext(Empty.getDefaultInstance());

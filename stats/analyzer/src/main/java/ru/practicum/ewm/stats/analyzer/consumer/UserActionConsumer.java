@@ -11,7 +11,6 @@ import ru.practicum.ewm.stats.analyzer.repository.UserActionRepository;
 import ru.practicum.ewm.stats.avro.ActionTypeAvro;
 import ru.practicum.ewm.stats.avro.UserActionAvro;
 
-import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 
@@ -45,7 +44,7 @@ public class UserActionConsumer {
                 .userId(action.getUserId())
                 .eventId(action.getEventId())
                 .weight(newWeight)
-                .timestamp(Instant.ofEpochMilli(action.getTimestamp()))
+                .timestamp(action.getTimestamp())
                 .build());
         }
     }

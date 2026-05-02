@@ -9,8 +9,6 @@ import ru.practicum.ewm.stats.analyzer.model.EventSimilarity;
 import ru.practicum.ewm.stats.analyzer.repository.EventSimilarityRepository;
 import ru.practicum.ewm.stats.avro.EventSimilarityAvro;
 
-import java.time.Instant;
-
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -30,7 +28,7 @@ public class EventSimilarityConsumer {
             .eventA(similarity.getEventA())
             .eventB(similarity.getEventB())
             .score(similarity.getScore())
-            .timestamp(Instant.ofEpochMilli(similarity.getTimestamp()))
+            .timestamp(similarity.getTimestamp())
             .build());
     }
 }
