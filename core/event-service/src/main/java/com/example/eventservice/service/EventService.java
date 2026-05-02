@@ -1,7 +1,6 @@
 package com.example.eventservice.service;
 
 import com.example.eventservice.client.RequestServiceClient;
-import com.example.eventservice.client.StatsClient;
 import com.example.eventservice.client.UserServiceClient;
 import com.example.eventservice.dto.EventForRequestDto;
 import com.example.eventservice.dto.EventFullDto;
@@ -12,7 +11,6 @@ import com.example.eventservice.dto.NewEventDto;
 import com.example.eventservice.dto.ParticipationRequestDto;
 import com.example.eventservice.dto.UpdateEventRequest;
 import com.example.eventservice.dto.UserShortDto;
-import com.example.eventservice.dto.ViewStatsDto;
 import com.example.eventservice.exception.BadRequestException;
 import com.example.eventservice.exception.ConditionsNotMetException;
 import com.example.eventservice.exception.ConflictException;
@@ -29,32 +27,38 @@ import com.example.eventservice.repository.EventRepository;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.ewm.stats.client.AnalyzerClient;
+import ru.practicum.ewm.stats.client.CollectorClient;
+import ru.practicum.ewm.stats.proto.analyzer.RecommendedEventProto;
+import ru.practicum.ewm.stats.proto.collector.ActionTypeProto;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class EventService {
 
-    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final int DEFAULT_RECOMMENDATIONS_SIZE = 10;
 
     private final EventRepository eventRepository;
     private final CategoryRepository categoryRepository;
-    private final StatsClient statsClient;
     private final EventMapper eventMapper;
     private final UserServiceClient userServiceClient;
     private final RequestServiceClient requestServiceClient;
+    private final CollectorClient collectorClient;
+    private final AnalyzerClient analyzerClient;
 
     public List<EventFullDto> getAllByAdmin(
         List<Long> users, List<String> states, List<Long> categories,
@@ -85,7 +89,7 @@ public class EventService {
         };
 
         List<Event> events = eventRepository.findAll(spec, PageRequest.of(from / size, size)).getContent();
-        enrichWithStats(events);
+        enrichWithRatings(events);
         Map<Long, UserShortDto> usersMap = fetchUsersMap(events);
         return events.stream().map(e -> eventMapper.toFullDto(e, usersMap.getOrDefault(e.getInitiatorId(),
             UserShortDto.builder().id(e.getInitiatorId()).name("").build()))).collect(Collectors.toList());
@@ -153,7 +157,7 @@ public class EventService {
             .requestModeration(dto.getRequestModeration() != null ? dto.getRequestModeration() : true)
             .state(EventState.PENDING)
             .title(dto.getTitle())
-            .views(0L)
+            .rating(0.0)
             .build();
         return eventMapper.toFullDto(eventRepository.save(event), user);
     }
@@ -197,10 +201,9 @@ public class EventService {
         }
         final String searchText = (text != null && !text.isBlank()) ? text : null;
         final List<Long> catList = (categories != null && !categories.isEmpty()) ? categories : null;
-        statsClient.recordHit(request.getRequestURI(), request.getRemoteAddr());
 
-        Sort pageSort = "VIEWS".equals(sort)
-            ? Sort.by(Sort.Direction.DESC, "views")
+        Sort pageSort = "RATING".equals(sort)
+            ? Sort.by(Sort.Direction.DESC, "rating")
             : Sort.by(Sort.Direction.ASC, "eventDate");
 
         Specification<Event> spec = (root, query, cb) -> {
@@ -227,26 +230,60 @@ public class EventService {
         };
 
         List<Event> events = eventRepository.findAll(spec, PageRequest.of(from / size, size, pageSort)).getContent();
-        enrichWithStats(events);
+        enrichWithRatings(events);
         Map<Long, UserShortDto> usersMap = fetchUsersMap(events);
         return events.stream().map(e -> eventMapper.toShortDto(e, usersMap.getOrDefault(e.getInitiatorId(),
             UserShortDto.builder().id(e.getInitiatorId()).name("").build()))).collect(Collectors.toList());
     }
 
-    public EventFullDto getPublicById(Long id, HttpServletRequest request) {
+    public EventFullDto getPublicById(Long id, Long userId) {
         Event event = eventRepository.findByIdAndState(id, EventState.PUBLISHED)
             .orElseThrow(() -> new NotFoundException("Event with id=" + id + " was not found"));
-        statsClient.recordHit(request.getRequestURI(), request.getRemoteAddr());
-        List<ViewStatsDto> stats = statsClient.getStats(
-            LocalDateTime.now().minusYears(10).format(FORMATTER),
-            LocalDateTime.now().plusYears(10).format(FORMATTER),
-            List.of(request.getRequestURI()), true
-        );
-        if (stats != null && !stats.isEmpty()) {
-            event.setViews(stats.get(0).getHits());
+
+        if (userId != null) {
+            collectorClient.sendUserAction(userId, id, ActionTypeProto.ACTION_VIEW);
         }
+
+        List<RecommendedEventProto> ratings = analyzerClient.getInteractionsCount(List.of(id));
+        if (!ratings.isEmpty()) {
+            event.setRating(ratings.get(0).getScore());
+        }
+
         UserShortDto initiator = userServiceClient.getById(event.getInitiatorId());
         return eventMapper.toFullDto(event, initiator);
+    }
+
+    public List<EventShortDto> getRecommendations(Long userId) {
+        List<RecommendedEventProto> recs = analyzerClient.getRecommendationsForUser(userId, DEFAULT_RECOMMENDATIONS_SIZE);
+        if (recs.isEmpty()) return List.of();
+
+        List<Long> eventIds = recs.stream().map(RecommendedEventProto::getEventId).collect(Collectors.toList());
+        List<Event> events = eventRepository.findAllById(eventIds);
+
+        Map<Long, Double> scoreMap = recs.stream()
+            .collect(Collectors.toMap(RecommendedEventProto::getEventId, RecommendedEventProto::getScore));
+        events.forEach(e -> e.setRating(scoreMap.getOrDefault(e.getId(), 0.0)));
+
+        Map<Long, UserShortDto> usersMap = fetchUsersMap(events);
+        return events.stream()
+            .map(e -> eventMapper.toShortDto(e, usersMap.getOrDefault(e.getInitiatorId(),
+                UserShortDto.builder().id(e.getInitiatorId()).name("").build())))
+            .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void likeEvent(Long userId, Long eventId) {
+        Event event = eventRepository.findByIdAndState(eventId, EventState.PUBLISHED)
+            .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " was not found"));
+
+        boolean hasVisited = requestServiceClient.getByEventId(eventId).stream()
+            .anyMatch(r -> r.getRequester().equals(userId) && "CONFIRMED".equals(r.getStatus()));
+
+        if (!hasVisited) {
+            throw new BadRequestException("User with id=" + userId + " has not attended event with id=" + eventId);
+        }
+
+        collectorClient.sendUserAction(userId, eventId, ActionTypeProto.ACTION_LIKE);
     }
 
     public List<ParticipationRequestDto> getRequests(Long userId, Long eventId) {
@@ -327,18 +364,14 @@ public class EventService {
         if (dto.getTitle() != null) event.setTitle(dto.getTitle());
     }
 
-    private void enrichWithStats(List<Event> events) {
+    private void enrichWithRatings(List<Event> events) {
         if (events.isEmpty()) return;
-        List<String> uris = events.stream().map(e -> "/events/" + e.getId()).collect(Collectors.toList());
-        List<ViewStatsDto> stats = statsClient.getStats(
-            LocalDateTime.now().minusYears(10).format(FORMATTER),
-            LocalDateTime.now().plusYears(10).format(FORMATTER),
-            uris, true
-        );
-        if (stats != null && !stats.isEmpty()) {
-            Map<String, Long> viewsMap = stats.stream().collect(
-                Collectors.toMap(ViewStatsDto::getUri, ViewStatsDto::getHits, Long::sum));
-            events.forEach(e -> e.setViews(viewsMap.getOrDefault("/events/" + e.getId(), 0L)));
+        List<Long> ids = events.stream().map(Event::getId).collect(Collectors.toList());
+        List<RecommendedEventProto> ratings = analyzerClient.getInteractionsCount(ids);
+        if (!ratings.isEmpty()) {
+            Map<Long, Double> ratingMap = ratings.stream()
+                .collect(Collectors.toMap(RecommendedEventProto::getEventId, RecommendedEventProto::getScore));
+            events.forEach(e -> e.setRating(ratingMap.getOrDefault(e.getId(), 0.0)));
         }
     }
 

@@ -19,6 +19,14 @@ spring:
       circuitbreaker:
         enabled: true
 
+grpc:
+  client:
+    collector:
+      address: 'discovery:///collector'
+      enableKeepAlive: true
+      keepAliveWithoutCalls: true
+      negotiationType: plaintext
+
 management:
   server:
     port: 8083

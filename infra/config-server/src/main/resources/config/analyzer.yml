@@ -1,0 +1,38 @@
+server:
+  port: 0
+
+grpc:
+  server:
+    port: 0
+
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/ewm-analyzer}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:root}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: false
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+kafka:
+  topics:
+    user-actions: stats.user-actions.v1
+    events-similarity: stats.events-similarity.v1
+
+management:
+  server:
+    port: 9096
+  endpoints:
+    web:
+      exposure:
+        include: health,info,env

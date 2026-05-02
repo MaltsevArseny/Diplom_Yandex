@@ -8,6 +8,8 @@ import com.example.requestservice.dto.ParticipationRequestDto;
 import com.example.requestservice.exception.ConflictException;
 import com.example.requestservice.exception.NotFoundException;
 import com.example.requestservice.exception.ServiceUnavailableException;
+import ru.practicum.ewm.stats.client.CollectorClient;
+import ru.practicum.ewm.stats.proto.collector.ActionTypeProto;
 import com.example.requestservice.model.ParticipationRequest;
 import com.example.requestservice.model.RequestStatus;
 import com.example.requestservice.repository.RequestRepository;
@@ -30,6 +32,7 @@ public class RequestService {
 
     private final RequestRepository requestRepository;
     private final EventServiceClient eventServiceClient;
+    private final CollectorClient collectorClient;
 
     public List<ParticipationRequestDto> getByUser(Long userId) {
         return requestRepository.findAllByRequesterId(userId).stream()
@@ -75,6 +78,9 @@ public class RequestService {
                 log.warn("Could not update confirmedRequests for event {}: {}", eventId, e.getMessage());
             }
         }
+
+        collectorClient.sendUserAction(userId, eventId, ActionTypeProto.ACTION_REGISTER);
+
         return toDto(request);
     }
 

@@ -19,7 +19,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -80,6 +82,13 @@ public class EventController {
         return eventService.updateByUser(userId, eventId, dto);
     }
 
+    @GetMapping("/events/recommendations")
+    public List<EventShortDto> getRecommendations(
+        @RequestHeader("X-EWM-USER-ID") Long userId
+    ) {
+        return eventService.getRecommendations(userId);
+    }
+
     @GetMapping("/events")
     public List<EventShortDto> getAllPublic(
         @RequestParam(required = false) String text,
@@ -97,8 +106,20 @@ public class EventController {
     }
 
     @GetMapping("/events/{id}")
-    public EventFullDto getPublicById(@PathVariable Long id, HttpServletRequest request) {
-        return eventService.getPublicById(id, request);
+    public EventFullDto getPublicById(
+        @PathVariable Long id,
+        @RequestHeader(value = "X-EWM-USER-ID", required = false) Long userId
+    ) {
+        return eventService.getPublicById(id, userId);
+    }
+
+    @PutMapping("/events/{eventId}/like")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void likeEvent(
+        @PathVariable Long eventId,
+        @RequestHeader("X-EWM-USER-ID") Long userId
+    ) {
+        eventService.likeEvent(userId, eventId);
     }
 
     @GetMapping("/users/{userId}/events/{eventId}/requests")
