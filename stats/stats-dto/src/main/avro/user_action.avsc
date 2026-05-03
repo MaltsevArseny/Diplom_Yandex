@@ -13,7 +13,7 @@
       {"name": "userId", "type": "long"},
       {"name": "eventId", "type": "long"},
       {"name": "actionType", "type": "ru.practicum.ewm.stats.avro.ActionTypeAvro"},
-      {"name": "timestamp", "type": {"type": "long", "logicalType": "timestamp-millis"}}
+      {"name": "timestamp", "type": "long"}
     ]
   }
 ]

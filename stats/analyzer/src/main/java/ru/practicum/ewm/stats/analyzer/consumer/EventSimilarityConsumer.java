@@ -3,6 +3,8 @@ package ru.practicum.ewm.stats.analyzer.consumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
+
+import java.time.Instant;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.ewm.stats.analyzer.model.EventSimilarity;
@@ -28,7 +30,7 @@ public class EventSimilarityConsumer {
             .eventA(similarity.getEventA())
             .eventB(similarity.getEventB())
             .score(similarity.getScore())
-            .timestamp(similarity.getTimestamp())
+            .timestamp(Instant.ofEpochMilli(similarity.getTimestamp()))
             .build());
     }
 }
