@@ -1,7 +1,10 @@
 package ru.practicum.ewm.stats.serializer;
 
+import org.apache.avro.Schema;
+import org.apache.avro.data.TimeConversions;
 import org.apache.avro.io.BinaryDecoder;
 import org.apache.avro.io.DecoderFactory;
+import org.apache.avro.specific.SpecificData;
 import org.apache.avro.specific.SpecificDatumReader;
 import org.apache.avro.specific.SpecificRecord;
 import org.apache.kafka.common.serialization.Deserializer;
@@ -13,7 +16,10 @@ public abstract class BaseAvroDeserializer<T extends SpecificRecord> implements 
     private final SpecificDatumReader<T> reader;
 
     protected BaseAvroDeserializer(Class<T> clazz) {
-        this.reader = new SpecificDatumReader<>(clazz);
+        SpecificData model = new SpecificData();
+        model.addLogicalTypeConversion(new TimeConversions.TimestampMillisConversion());
+        Schema schema = SpecificData.get().getSchema(clazz);
+        this.reader = new SpecificDatumReader<>(schema, schema, model);
     }
 
     @Override

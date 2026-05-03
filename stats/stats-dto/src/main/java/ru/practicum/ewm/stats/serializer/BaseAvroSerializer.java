@@ -1,7 +1,9 @@
 package ru.practicum.ewm.stats.serializer;
 
+import org.apache.avro.data.TimeConversions;
 import org.apache.avro.io.BinaryEncoder;
 import org.apache.avro.io.EncoderFactory;
+import org.apache.avro.specific.SpecificData;
 import org.apache.avro.specific.SpecificDatumWriter;
 import org.apache.avro.specific.SpecificRecord;
 import org.apache.kafka.common.serialization.Serializer;
@@ -14,7 +16,9 @@ public abstract class BaseAvroSerializer<T extends SpecificRecord> implements Se
     private final SpecificDatumWriter<T> writer;
 
     protected BaseAvroSerializer(Class<T> clazz) {
-        this.writer = new SpecificDatumWriter<>(clazz);
+        SpecificData model = new SpecificData();
+        model.addLogicalTypeConversion(new TimeConversions.TimestampMillisConversion());
+        this.writer = new SpecificDatumWriter<>(SpecificData.get().getSchema(clazz), model);
     }
 
     @Override
